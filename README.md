@@ -57,5 +57,6 @@ npm run dev
 Then server will start at -- http://localhost:5000
 
 ## API Endpoints
-POST /api/auth/signup → Register new user
-POST /api/auth/login → Login user
+POST /api/auth/signup -> Register new user
+POST /api/auth/login -> Login user
+POST /api/auth/refresh -> refresh token
