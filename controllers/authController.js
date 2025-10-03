@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const pool = require('../config/db');
-const { generateTokens, verifyRefreshToken, verifyAccessToken } = require('../utils/tokenService');
+const { generateTokens, verifyRefreshToken, verifyAccessToken, revokeRefreshToken } = require('../utils/tokenService');
 
 // SIGNUP
 const signup = async (req, res) => {
@@ -18,7 +18,7 @@ const signup = async (req, res) => {
     );
 
     const user = result.rows[0];
-    const tokens = generateTokens(user);
+    const tokens = await generateTokens(user);
 
     res.status(201).json({
         message: 'User registered successfully',
@@ -41,15 +41,19 @@ const login = async (req, res) => {
     if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
 
     const user = result.rows[0];
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ error: 'Invalid credentials' });
 
-    const tokens = generateTokens(user);
+    if (user.role === 'admin') {
+      return res.status(403).json({ error: 'Admins cannot log in here. Use the admin login route.' });
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ error: 'Invalid password' });
+
+    const tokens = await generateTokens(user);
 
     res.status(200).json({
-        message: 'Login successful',
-        user: { id: user.id, name: user.name, email: user.email, role: user.role },
-        ...tokens
+      message: 'Login successful',
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      ...tokens
     });
 
   } catch (error) {
@@ -64,8 +68,8 @@ const refresh = async (req, res) => {
     const { refreshToken } = req.body;
     if (!refreshToken) return res.status(401).json({ error: 'Refresh token required' });
 
-    const userData = verifyRefreshToken(refreshToken);
-    const tokens = generateTokens(userData);
+    const userData = await verifyRefreshToken(refreshToken);
+    const tokens = await generateTokens(userData);
 
     res.status(200).json({
       message: 'Token refreshed successfully ✅',
@@ -77,4 +81,19 @@ const refresh = async (req, res) => {
   }
 };
 
-module.exports = { signup, login, refresh };
+// LOGOUT
+const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(400).json({ error: 'Refresh token required' });
+
+    await revokeRefreshToken(refreshToken);
+    res.status(200).json({ message: 'Logged out successfully' });
+
+  }catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { signup, login, refresh, logout };

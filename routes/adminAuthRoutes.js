@@ -1,10 +1,11 @@
-// backend/routes/authRoutes.js
+// backend/routes/protectedRoutes.js
 const express = require('express');
-const { signup, login, refresh, logout } = require('../controllers/authController');
 const router = express.Router();
+const authMiddleware = require('../middleware/authMiddleware');
+const { signup, login, refresh } = require('../controllers/adminAuthController');
 
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/refresh', refresh);
-router.post('/logout', logout);
+
 module.exports = router;

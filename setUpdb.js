@@ -13,6 +13,16 @@ async function createTables() {
       );
     `);
     console.log('Users table created');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS refresh_tokens (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Refresh Tokens table created');
   } catch (err) {
     console.error('Error creating tables:', err);
   } finally {
